@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Hasura Simple Database</title>
+</head>
+<body>
+
+<h2>Add User</h2>
+<input id="name" placeholder="Name">
+<input id="email" placeholder="Email">
+<button onclick="addUser()">Add</button>
+
+<h2>Users List</h2>
+<ul id="users"></ul>
+
+<script>
+const HASURA_URL = "https://my-web-app.hasura.app/v1/graphql";
+const ADMIN_SECRET = "S9COtHCpdM4In2aQvSEsPBc4Q6RlkxUSE3BsJYKSrYCyagwVOI8QBDAn1gKMcq07";
+
+function fetchUsers() {
+  fetch(HASURA_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-hasura-admin-secret": ADMIN_SECRET
+    },
+    body: JSON.stringify({
+      query: `
+        query {
+          users {
+            id
+            name
+            email
+          }
+        }
+      `
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    const list = document.getElementById("users");
+    list.innerHTML = "";
+    data.data.users.forEach(u => {
+      const li = document.createElement("li");
+      li.textContent = u.name + " (" + u.email + ")";
+      list.appendChild(li);
+    });
+  });
+}
+
+function addUser() {
+  const name = document.getElementById("name").value;
+  const email = document.getElementById("email").value;
+
+  fetch(HASURA_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-hasura-admin-secret": ADMIN_SECRET
+    },
+    body: JSON.stringify({
+      query: `
+        mutation ($name: String!, $email: String!) {
+          insert_users_one(object: {
+            name: $name,
+            email: $email
+          }) {
+            id
+          }
+        }
+      `,
+      variables: { name, email }
+    })
+  })
+  .then(() => fetchUsers());
+}
+
+fetchUsers();
+</script>
+
+</body>
+</html>
